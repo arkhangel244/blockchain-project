@@ -50,7 +50,7 @@ web_modules/
 
 # Optional npm cache directory
 .npm
-
+*./node_modules/
 # Optional eslint cache
 .eslintcache
 
@@ -107,7 +107,7 @@ dist
 
 # Docusaurus cache and generated files
 .docusaurus
-
+*.js
 # Serverless directories
 .serverless/
 

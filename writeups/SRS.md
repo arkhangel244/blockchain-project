@@ -7,7 +7,11 @@
 
 ![borderpay.io arch](architecture.jpg)
 
-## Functional Requirements
+## 1 What are we building?
+
+We are building a complete system that allows creation for financial contracts between a company and it’s contractors/employees, have a progressive payroll system that automatically updates and calcu-lates salaries of the contractors/employees on a timely basis and ensure payments are made as perthe contract signed by both parties viz. the employer and employee be it local or cross-border. 
+
+### Functional Requirements
 
 ### Creating Accounts
 
