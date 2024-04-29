@@ -52,6 +52,32 @@ type Account struct {
 	BankAccount       string `json:"BankAccount"`
 }
 
+func (s *HiringContract) InitLedger(ctx contractapi.TransactionContextInterface) error {
+	emptyaccount := Account{}
+	fullAccount := Account{
+		Name:              "Rudranil",
+		BankName:          "SBI",
+		BankAccount:       "dwodnwidjoidj",
+		PreferredCurrency: string(Rupees),
+	}
+	Hirings := []Hiring{
+
+		Hiring{SubmittedBy: "employee1", HiringID: "HIRE1", EmployeeID: "ABCS", Company: "Tomoko", Salary: 10000, VariablePay: 2000, Currency: Dollar, Status: Open, AccountHiring: emptyaccount},
+		Hiring{SubmittedBy: "employee1", HiringID: "HIRE2", EmployeeID: "ABCD", Company: "Tomoko", Salary: 10000, VariablePay: 2000, Currency: Rupees, Status: Open, AccountHiring: fullAccount},
+	}
+
+	for _, Hiring := range Hirings {
+		HiringAsBytes, _ := json.Marshal(Hiring)
+		err := ctx.GetStub().PutState(Hiring.HiringID, HiringAsBytes)
+
+		if err != nil {
+			return fmt.Errorf("Failed to put to world state. %s", err.Error())
+		}
+	}
+
+	return nil
+}
+
 func (s *HiringContract) CreateHiring(ctx contractapi.TransactionContextInterface, hiringID string, AccountID string, salary int, variablepay int, curr Currency, comapny string) error {
 	// get ID of submitting client
 	clientID, err := s.GetSubmittingClientIdentity(ctx)
@@ -65,7 +91,7 @@ func (s *HiringContract) CreateHiring(ctx contractapi.TransactionContextInterfac
 		EmployeeID:    AccountID,
 		Salary:        float64(salary),
 		VariablePay:   float64(variablepay),
-		Currency:      Dollar,
+		Currency:      curr,
 		Status:        Open,
 		Company:       comapny,
 		AccountHiring: emptyaccount,
@@ -80,7 +106,11 @@ func (s *HiringContract) CreateHiring(ctx contractapi.TransactionContextInterfac
 	if err != nil {
 		return fmt.Errorf("failed to put auction in public data: %v", err)
 	}
-
+	// set the seller of the auction as an endorser
+	err = setAssetStateBasedEndorsement(ctx, hiringID, AccountID)
+	if err != nil {
+		return fmt.Errorf("failed setting state based endorsement for new organization: %v", err)
+	}
 	return nil
 
 }
