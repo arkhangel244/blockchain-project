@@ -3,6 +3,7 @@ package borderpay
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
@@ -33,6 +34,40 @@ const (
 	Yen    Currency = "yen"
 )
 
+func ParseCurrency(str string) Currency {
+
+	switch str {
+	case "dollar":
+		return Dollar
+	case "rupees":
+		return Rupees
+	case "euro":
+		return Euro
+	case "yen":
+		return Yen
+	default:
+		// Return a default value or handle error
+		return ""
+	}
+}
+
+func ParseStatus(str string) Status {
+
+	switch str {
+	case "open":
+		return Open
+	case "accepted":
+		return Accepted
+	case "rejected":
+		return Rejected
+	case "closed":
+		return Closed
+	default:
+		// Return a default value or handle error
+		return ""
+	}
+}
+
 type Hiring struct {
 	SubmittedBy   string   `json:"submittedby"`
 	HiringID      string   `json:"hiringID"`
@@ -46,44 +81,20 @@ type Hiring struct {
 }
 
 type Account struct {
-	Name              string `json:"Name"`
-	BankName          string `json:"BankName"`
-	PreferredCurrency string `json:"PreferredCurrency"`
-	BankAccount       string `json:"BankAccount"`
+	Name              string   `json:"Name"`
+	BankName          string   `json:"BankName"`
+	PreferredCurrency Currency `json:"PreferredCurrency"`
+	BankAccount       string   `json:"BankAccount"`
 }
 
-func (s *HiringContract) InitLedger(ctx contractapi.TransactionContextInterface) error {
-	emptyaccount := Account{}
-	fullAccount := Account{
-		Name:              "Rudranil",
-		BankName:          "SBI",
-		BankAccount:       "dwodnwidjoidj",
-		PreferredCurrency: string(Rupees),
-	}
-	Hirings := []Hiring{
-
-		Hiring{SubmittedBy: "employee1", HiringID: "HIRE1", EmployeeID: "ABCS", Company: "Tomoko", Salary: 10000, VariablePay: 2000, Currency: Dollar, Status: Open, AccountHiring: emptyaccount},
-		Hiring{SubmittedBy: "employee1", HiringID: "HIRE2", EmployeeID: "ABCD", Company: "Tomoko", Salary: 10000, VariablePay: 2000, Currency: Rupees, Status: Open, AccountHiring: fullAccount},
-	}
-
-	for _, Hiring := range Hirings {
-		HiringAsBytes, _ := json.Marshal(Hiring)
-		err := ctx.GetStub().PutState(Hiring.HiringID, HiringAsBytes)
-
-		if err != nil {
-			return fmt.Errorf("Failed to put to world state. %s", err.Error())
-		}
-	}
-
-	return nil
-}
-
-func (s *HiringContract) CreateHiring(ctx contractapi.TransactionContextInterface, hiringID string, AccountID string, salary int, variablepay int, curr Currency, comapny string) error {
+func (s *HiringContract) CreateHiring(ctx contractapi.TransactionContextInterface, hiringID string, AccountID string, salary int, variablepay int, curr string, comapny string) error {
 	// get ID of submitting client
 	clientID, err := s.GetSubmittingClientIdentity(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get client identity %v", err)
 	}
+	lower := strings.ToLower(string(curr))
+	currency := ParseCurrency(lower)
 	emptyaccount := Account{}
 	hiring := Hiring{
 		HiringID:      hiringID,
@@ -91,7 +102,7 @@ func (s *HiringContract) CreateHiring(ctx contractapi.TransactionContextInterfac
 		EmployeeID:    AccountID,
 		Salary:        float64(salary),
 		VariablePay:   float64(variablepay),
-		Currency:      curr,
+		Currency:      currency,
 		Status:        Open,
 		Company:       comapny,
 		AccountHiring: emptyaccount,
@@ -165,7 +176,7 @@ func (s *HiringContract) GetHiringContractsByEmployeeID(ctx contractapi.Transact
 	return AssetsJSON, nil
 }
 
-func (s *HiringContract) SubmitHiring(ctx contractapi.TransactionContextInterface, name, preferredCurrency, bankAccount, bankName, hiringID string, status Status) error {
+func (s *HiringContract) SubmitHiring(ctx contractapi.TransactionContextInterface, name, preferredCurrency, bankAccount, bankName, hiringID string, status string) error {
 
 	// get the auction from public state
 	hiring, err := s.QueryHiring(ctx, hiringID)
@@ -173,14 +184,18 @@ func (s *HiringContract) SubmitHiring(ctx contractapi.TransactionContextInterfac
 		return fmt.Errorf("failed to get auction from public state %v", err)
 	}
 
+	lower := strings.ToLower(string(preferredCurrency))
+	currency := ParseCurrency(lower)
 	// the auction needs to be open for users to add their bid
-	Status := hiring.Status
+	statuss := strings.ToLower(status)
+	Status := ParseStatus(statuss)
+
 	if Status == Closed {
 		return fmt.Errorf("cannot take action, action already taken")
 	} else if Status == Accepted {
 		account := Account{
 			Name:              name,
-			PreferredCurrency: preferredCurrency,
+			PreferredCurrency: currency,
 			BankAccount:       bankAccount,
 			BankName:          bankName,
 		}

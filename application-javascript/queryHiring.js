@@ -13,7 +13,7 @@ const { buildCCPOrg1, buildCCPOrg2, buildWallet, prettyJSONString} = require('..
 const myChannel = 'mychannel';
 const myChaincodeName = 'borderpay';
 
-async function queryHirings(ccp,wallet,user) {
+async function queryHirings(ccp,wallet,user,employeeiD) {
 	try {
 
 		const gateway = new Gateway();
@@ -27,7 +27,7 @@ async function queryHirings(ccp,wallet,user) {
 
 		
 		console.log('\n--> Evaluate Transaction: query the auction');
-		let result = await contract.evaluateTransaction('GetAllHirings');
+		let result = await contract.evaluateTransaction('GetHiringContractsByEmployeeID',employeeiD);
 		console.log('*** Result: Auction: ' + prettyJSONString(result.toString()));
 
 		gateway.disconnect();
@@ -42,17 +42,23 @@ async function main() {
 	try {
 
 		if (process.argv[2] === undefined || process.argv[3] === undefined ) {
-			console.log('Usage: node createAuction.js org userID auctionID item');
+			console.log('Usage: node createAuction.js org userID employeeID ');
 			process.exit(1);
 		}
 
 		const org = process.argv[2];
         const user = process.argv[3];
+		const employeeID = process.argv[4];
 		if (org === 'Org1' || org === 'org1') {
 			const ccp = buildCCPOrg1();
 			const walletPath = path.join(__dirname, 'wallet/org1');
 			const wallet = await buildWallet(Wallets, walletPath);
-			await queryHirings(ccp,wallet,user);
+			await queryHirings(ccp,wallet,user,employeeID);
+		} else if (org === 'Org2' || org === 'org2') {
+			const ccp = buildCCPOrg2();
+			const walletPath = path.join(__dirname, 'wallet/org2');
+			const wallet = await buildWallet(Wallets, walletPath);
+			await queryHirings(ccp,wallet,user,employeeID);
 		}  else {
 			console.log('Usage: node createAuction.js org userID auctionID item');
 			console.log('Org must be Org1 or Org2');

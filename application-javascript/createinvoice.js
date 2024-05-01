@@ -33,7 +33,7 @@ async function CreateInvoice(ccp,wallet,user,invoiceID,FromAccount,ToAccount,Amo
 
 		console.log('\n--> Evaluate Transaction: query the auction that was just created');
 		let result = await contract.evaluateTransaction('QueryAllInvoices');
-		console.log('*** Result: Auction: ' + prettyJSONString(result.toString()));
+		console.log('*** Result: Invoice: ' + prettyJSONString(result.toString()));
 
 		gateway.disconnect();
 	} catch (error) {
